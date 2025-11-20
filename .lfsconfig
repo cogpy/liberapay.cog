@@ -1,4 +1,4 @@
 [remote "origin"]
-	lfsurl = git@github.com:liberapay/liberapay.com
+	lfsurl = git@github.com:cogpy/liberapay.cog
 [remote "gitlab"]
 	lfsurl = git@gitlab.com:liberapay/liberapay.com.git
