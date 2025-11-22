@@ -10,7 +10,7 @@ from liberapay.billing.payday import Payday
 from liberapay.constants import DONATION_LIMITS, EPOCH, PAYIN_AMOUNTS, STANDARD_TIPS
 from liberapay.exceptions import MissingPaymentAccount, NoSelfTipping, ProhibitedSourceCountry
 from liberapay.models.exchange_route import ExchangeRoute
-from liberapay.payin.common import resolve_amounts, resolve_team_donation
+from liberapay.payin.common import resolve_amounts, resolve_team_donation, update_payin
 from liberapay.payin.cron import execute_reviewed_payins
 from liberapay.payin.paypal import sync_all_pending_payments
 from liberapay.payin.prospect import PayinProspect
@@ -2698,3 +2698,65 @@ class TestRefundsStripe(EmailHarness):
         r = self.client.GET('/alice/receipts/direct/%i' % payin.id, auth_as=alice)
         assert r.code == 200
         assert ' fully refunded ' in r.text
+
+
+class TestUpdatePayin(Harness):
+
+    def test_update_payin_captures_old_status_correctly(self):
+        """Test that update_payin correctly captures the old status before updating.
+        
+        This is a regression test for a bug where the old_status was queried
+        after the UPDATE, causing it to always return the new status.
+        """
+        alice = self.make_participant('alice')
+        bob = self.make_participant('bob')
+        route = self.upsert_route(alice, 'stripe-card')
+        
+        # Create a payin with 'pending' status
+        payin = self.make_payin_and_transfer(route, bob, EUR('10.00'), status='pending')[0]
+        assert payin.status == 'pending'
+        
+        # Update the payin to 'succeeded' status
+        updated_payin = update_payin(
+            self.db, payin.id, payin.remote_id, 'succeeded', None
+        )
+        
+        # Verify the payin was updated
+        assert updated_payin.status == 'succeeded'
+        
+        # Verify that a payin_event was created with the status transition
+        events = self.db.all("""
+            SELECT * FROM payin_events WHERE payin = %s ORDER BY timestamp
+        """, (payin.id,))
+        
+        # Should have at least 2 events: initial 'pending' and the update to 'succeeded'
+        assert len(events) >= 2
+        # The last event should be the transition to 'succeeded'
+        assert events[-1].status == 'succeeded'
+        
+    def test_update_payin_does_not_create_duplicate_events_for_same_status(self):
+        """Test that updating a payin to the same status doesn't create duplicate events."""
+        alice = self.make_participant('alice')
+        bob = self.make_participant('bob')
+        route = self.upsert_route(alice, 'stripe-card')
+        
+        # Create a payin with 'succeeded' status
+        payin = self.make_payin_and_transfer(route, bob, EUR('10.00'), status='succeeded')[0]
+        
+        # Count initial events
+        initial_event_count = self.db.one("""
+            SELECT count(*) FROM payin_events WHERE payin = %s
+        """, (payin.id,))
+        
+        # Update the payin to the same 'succeeded' status
+        update_payin(
+            self.db, payin.id, payin.remote_id, 'succeeded', None
+        )
+        
+        # Count events after update
+        final_event_count = self.db.one("""
+            SELECT count(*) FROM payin_events WHERE payin = %s
+        """, (payin.id,))
+        
+        # Should not have created a new event since status didn't change
+        assert final_event_count == initial_event_count
