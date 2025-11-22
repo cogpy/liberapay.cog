@@ -113,7 +113,13 @@ def update_payin(
 
     """
     with db.get_cursor() as cursor:
-        payin, old_status = cursor.one("""
+        # First, get the old status before updating
+        old_status = cursor.one("""
+            SELECT status FROM payins WHERE id = %(payin_id)s
+        """, locals())
+        
+        # Then update the payin
+        payin = cursor.one("""
             UPDATE payins
                SET status = %(status)s
                  , error = %(error)s
@@ -124,8 +130,7 @@ def update_payin(
                  , refunded_amount = coalesce(%(refunded_amount)s, refunded_amount)
              WHERE id = %(payin_id)s
          RETURNING payins
-                 , (SELECT status FROM payins WHERE id = %(payin_id)s) AS old_status
-        """, locals(), default=(None, None))
+        """, locals())
         if not payin:
             return
         if remote_id and payin.remote_id != remote_id:
