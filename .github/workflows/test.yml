@@ -11,7 +11,17 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
+      - name: Clean workspace directory
+        run: |
+          if [ -d "${{ github.workspace }}" ]; then
+            echo "Cleaning pre-existing workspace directory..."
+            rm -rf "${{ github.workspace }}"
+          fi
+      - name: Setup Git LFS
+        uses: git-lfs/setup-git-lfs@v2
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Install PostgreSQL 16
         run: |
           sudo sh -c 'echo "deb https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
