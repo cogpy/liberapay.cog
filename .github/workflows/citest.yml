@@ -1,4 +1,4 @@
-name: CI
+name: CI-test
 on:
   # Trigger the workflow on push or pull request events but only for the master branch
   push:
@@ -8,6 +8,29 @@ on:
   # Allow running this workflow manually from the Actions tab
   workflow_dispatch:
 jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Setup git-lfs
+        run: git lfs install
+
+      - name: Authenticate for LFS
+        run: git lfs env
+
+      - name: Pull LFS Files
+        run: git lfs pull
+
+      - name: Clean Untracked Files
+        run: git clean -fd
+
+      - name: Checkout branch if exists, else fallback
+        run: |
+          git fetch -a
+          if git show-ref --verify --quiet refs/heads/copilot/optimize-performance; then
+            git checkout copilot/optimize-performance
+          else
+            git checkout main
+          fi
   test:
     runs-on: ubuntu-latest
     steps:
