@@ -606,9 +606,9 @@ boto3==1.40.27 \
         --hash=sha256:ea3b790c7077558ed1f02a3072fb3cb992bbbd253392f4b6e9e8976941c7d456 \
         --hash=sha256:eff12264e7c8b4985074ccce27a3b38a485bb7f7422cc8046fee9be4983e4125
 
-stripe==14.0.0 \
-    --hash=sha256:1c069e99b3223c03291e012ada1429aec40cdd19120d97bffd2a514b2e61ddc9 \
-    --hash=sha256:325d20daee936b2bd01936978c71d6717ad62e58ec1f5f5affb083c879c0c2be
+stripe==14.0.1 \
+    --hash=sha256:f2d56345bf5d41c1f21f814b00174a3173a0b5eb4e8fc46a8f779e3d7a2efc6e \
+    --hash=sha256:ff25c5e5f085beaa98b6b9c2c729d22ad99068196cbd83fdf82669fd08311b76
 
     typing-extensions==4.15.0 \
         --hash=sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466 \
